@@ -392,7 +392,7 @@ MODEL_SPEC = {
                                 "and reprojected to the DEM projection"),
                             "bands": {1: {"type": "number", "units": u.none}}
                         },
-                        "filled_dem.tif": spec_utils.FILLED_DEM,
+                        "pit_filled_dem.tif": spec_utils.FILLED_DEM,
                         "slope.tif": spec_utils.SLOPE,
                         "subsurface_export_n.pickle": {
                             "about": "Pickled zonal statistics of nitrogen subsurface export"
@@ -428,13 +428,14 @@ _OUTPUT_BASE_FILES = {
     'n_subsurface_export_path': 'n_subsurface_export.tif',
     'n_total_export_path': 'n_total_export.tif',
     'p_surface_export_path': 'p_surface_export.tif',
-    'watershed_results_ndr_path': 'watershed_results_ndr.gpkg',
+    'watershed_results_ndr_path': 'watershed_results_ndr.shp',
+    'stream_path': 'stream_and_drainage.tif',
 }
 
 INTERMEDIATE_DIR_NAME = 'intermediate_outputs'
 
 _INTERMEDIATE_BASE_FILES = {
-    'ic_factor_path': 'ic_factor.tif',
+    'ic_path': 'ic.tif',
     'load_n_path': 'load_n.tif',
     'load_p_path': 'load_p.tif',
     'modified_load_n_path': 'modified_load_n.tif',
@@ -445,7 +446,6 @@ _INTERMEDIATE_BASE_FILES = {
     's_accumulation_path': 's_accumulation.tif',
     's_bar_path': 's_bar.tif',
     's_factor_inverse_path': 's_factor_inverse.tif',
-    'stream_path': 'stream.tif',
     'sub_load_n_path': 'sub_load_n.tif',
     'surface_load_n_path': 'surface_load_n.tif',
     'surface_load_p_path': 'surface_load_p.tif',
@@ -460,15 +460,15 @@ _INTERMEDIATE_BASE_FILES = {
     'effective_retention_p_path': 'effective_retention_p.tif',
     'flow_accumulation_path': 'flow_accumulation.tif',
     'flow_direction_path': 'flow_direction.tif',
-    'thresholded_slope_path': 'thresholded_slope.tif',
+    'thresholded_slope_path': 'slope_threshold.tif',
     'dist_to_channel_path': 'dist_to_channel.tif',
     'drainage_mask': 'what_drains_to_stream.tif',
+    'pit_filled_dem_path': 'pit_filled_dem.tif',
+    'slope_path': 'slope.tif',
 }
 
 _CACHE_BASE_FILES = {
-    'filled_dem_path': 'filled_dem.tif',
     'aligned_dem_path': 'aligned_dem.tif',
-    'slope_path': 'slope.tif',
     'aligned_lulc_path': 'aligned_lulc.tif',
     'aligned_runoff_proxy_path': 'aligned_runoff_proxy.tif',
     'surface_load_n_pickle_path': 'surface_load_n.pickle',
@@ -594,7 +594,7 @@ def execute(args):
     output_dir = os.path.join(args['workspace_dir'])
     intermediate_output_dir = os.path.join(
         args['workspace_dir'], INTERMEDIATE_DIR_NAME)
-    cache_dir = os.path.join(intermediate_output_dir, 'cache_dir')
+    cache_dir = os.path.join(intermediate_output_dir, 'churn_dir_not_for_humans')
     utils.make_directories([output_dir, intermediate_output_dir, cache_dir])
 
     try:
@@ -656,16 +656,16 @@ def execute(args):
     fill_pits_task = task_graph.add_task(
         func=pygeoprocessing.routing.fill_pits,
         args=(
-            (f_reg['aligned_dem_path'], 1), f_reg['filled_dem_path']),
+            (f_reg['aligned_dem_path'], 1), f_reg['pit_filled_dem_path']),
         kwargs={'working_dir': cache_dir},
         dependent_task_list=[align_raster_task],
-        target_path_list=[f_reg['filled_dem_path']],
+        target_path_list=[f_reg['pit_filled_dem_path']],
         task_name='fill pits')
 
     flow_dir_task = task_graph.add_task(
         func=pygeoprocessing.routing.flow_dir_mfd,
         args=(
-            (f_reg['filled_dem_path'], 1), f_reg['flow_direction_path']),
+            (f_reg['pit_filled_dem_path'], 1), f_reg['flow_direction_path']),
         kwargs={'working_dir': cache_dir},
         dependent_task_list=[fill_pits_task],
         target_path_list=[f_reg['flow_direction_path']],
@@ -693,7 +693,7 @@ def execute(args):
 
     calculate_slope_task = task_graph.add_task(
         func=pygeoprocessing.calculate_slope,
-        args=((f_reg['filled_dem_path'], 1), f_reg['slope_path']),
+        args=((f_reg['pit_filled_dem_path'], 1), f_reg['slope_path']),
         target_path_list=[f_reg['slope_path']],
         dependent_task_list=[fill_pits_task],
         task_name='calculate slope')
