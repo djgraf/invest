@@ -779,8 +779,8 @@ def execute(args, streams_path):
             f_reg['d_dn_path']),
         kwargs={'weight_raster_path_band': (
             f_reg['s_factor_inverse_path'], 1)},
-        #dependent_task_list=[stream_extraction_task, s_inv_task],
-        dependent_task_list=[s_inv_task],
+        dependent_task_list=[stream_extraction_task, s_inv_task],
+        #dependent_task_list=[s_inv_task],
         target_path_list=[f_reg['d_dn_path']],
         task_name='d dn')
 
@@ -790,8 +790,8 @@ def execute(args, streams_path):
             (f_reg['flow_direction_path'], 1),
             (f_reg['stream_path'], 1),
             f_reg['dist_to_channel_path']),
-        #dependent_task_list=[stream_extraction_task],
-        dependent_task_list=[],
+        dependent_task_list=[stream_extraction_task],
+        #dependent_task_list=[],
         target_path_list=[f_reg['dist_to_channel_path']],
         task_name='dist to channel')
 
@@ -855,8 +855,8 @@ def execute(args, streams_path):
                 f_reg['aligned_lulc_path'], f_reg['stream_path'],
                 lucode_to_parameters, f'eff_{nutrient}', eff_path),
             target_path_list=[eff_path],
-            #dependent_task_list=[align_raster_task, stream_extraction_task],
-            dependent_task_list=[align_raster_task],
+            dependent_task_list=[align_raster_task, stream_extraction_task],
+            #dependent_task_list=[align_raster_task],
             task_name=f'ret eff {nutrient}')
 
         crit_len_path = f_reg[f'crit_len_{nutrient}_path']
@@ -866,8 +866,8 @@ def execute(args, streams_path):
                 f_reg['aligned_lulc_path'], f_reg['stream_path'],
                 lucode_to_parameters, f'crit_len_{nutrient}', crit_len_path),
             target_path_list=[crit_len_path],
-            #dependent_task_list=[align_raster_task, stream_extraction_task],
-            dependent_task_list=[align_raster_task],
+            dependent_task_list=[align_raster_task, stream_extraction_task],
+            #dependent_task_list=[align_raster_task],
             task_name=f'ret eff {nutrient}')
 
         effective_retention_path = (
@@ -879,9 +879,9 @@ def execute(args, streams_path):
                 f_reg['stream_path'], eff_path,
                 crit_len_path, effective_retention_path),
             target_path_list=[effective_retention_path],
-            #dependent_task_list=[
-                #stream_extraction_task, eff_task, crit_len_task],
-            dependent_task_list=[eff_task, crit_len_task],
+            dependent_task_list=[
+                stream_extraction_task, eff_task, crit_len_task],
+            #dependent_task_list=[eff_task, crit_len_task],
             task_name=f'eff ret {nutrient}')
 
         ndr_path = f_reg[f'ndr_{nutrient}_path']
