@@ -682,10 +682,17 @@ def execute(args):
     
     def do_nothing():
         pass
-    
+    '''
+    path_check = args['workspace_dir'] + 'stream_and_drainage' + file_suffix + '.tif'
+
+    if os.path.exists(path_check):
+        def return_stream_file():
+            return path_check
+    '''
     stream_extraction_task = task_graph.add_task(
         func=do_nothing,
         args=(),
+        target_path_list=[f_reg['stream_path']],
         dependent_task_list=[flow_accum_task],
         task_name='stream extraction')
 
