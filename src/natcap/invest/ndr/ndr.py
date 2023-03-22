@@ -483,7 +483,7 @@ _CACHE_BASE_FILES = {
 _TARGET_NODATA = -1
 
 
-def execute(args):
+def execute(args, streams_path):
     """Nutrient Delivery Ratio.
 
     Args:
@@ -680,12 +680,18 @@ def execute(args):
         dependent_task_list=[flow_dir_task],
         task_name='flow accum')
     
-    '''
-    path = args['workspace_dir'] + 'stream_and_drainage_' + args['suffix'] + '.tif'
-
-    def assign_suffix(path):
-        f_reg['stream_path'] = path
     
+    def return_streams(streams_path):
+        return streams_path
+    
+    stream_extraction_task = task_graph.add_task(
+        func=return_streams,
+        args=(streams_path),
+        target_path_list=[f_reg['stream_path']],
+        dependent_task_list=[flow_accum_task],
+        task_name='stream extraction')
+    
+    '''
     path = args['workspace_dir'] + 'stream_and_drainage' + file_suffix + '.tif'
 
     if os.path.exists(path_check):
