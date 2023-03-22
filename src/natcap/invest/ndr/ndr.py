@@ -680,8 +680,12 @@ def execute(args):
         dependent_task_list=[flow_dir_task],
         task_name='flow accum')
     
+    def do_nothing():
+        pass
+    
     stream_extraction_task = task_graph.add_task(
-        target_path_list=[f_reg['stream_path']],
+        func=do_nothing,
+        args=(),
         dependent_task_list=[flow_accum_task],
         task_name='stream extraction')
 
