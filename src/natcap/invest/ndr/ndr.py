@@ -680,6 +680,7 @@ def execute(args):
         dependent_task_list=[flow_dir_task],
         task_name='flow accum')
 
+    '''
     stream_extraction_task = task_graph.add_task(
         func=pygeoprocessing.routing.extract_streams_mfd,
         args=(
@@ -690,7 +691,8 @@ def execute(args):
         target_path_list=[f_reg['stream_path']],
         dependent_task_list=[flow_accum_task],
         task_name='stream extraction')
-
+    '''
+    
     calculate_slope_task = task_graph.add_task(
         func=pygeoprocessing.calculate_slope,
         args=((f_reg['pit_filled_dem_path'], 1), f_reg['slope_path']),
