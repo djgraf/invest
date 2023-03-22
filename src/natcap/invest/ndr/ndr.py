@@ -680,17 +680,20 @@ def execute(args):
         dependent_task_list=[flow_dir_task],
         task_name='flow accum')
     
-    def do_nothing():
-        pass
+
+    path = args['workspace_dir'] + 'stream_and_drainage' + file_suffix + '.tif'
+
+    def assign_suffix(file_suffix):
+        f_reg['stream_path'] = path
     '''
-    path_check = args['workspace_dir'] + 'stream_and_drainage' + file_suffix + '.tif'
+    path = args['workspace_dir'] + 'stream_and_drainage' + file_suffix + '.tif'
 
     if os.path.exists(path_check):
         def return_stream_file():
             return path_check
     '''
     stream_extraction_task = task_graph.add_task(
-        func=do_nothing,
+        func=assign_suffix,
         args=(),
         target_path_list=[f_reg['stream_path']],
         dependent_task_list=[flow_accum_task],
