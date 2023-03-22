@@ -686,7 +686,7 @@ def execute(args, streams_path):
     
     stream_extraction_task = task_graph.add_task(
         func=return_streams,
-        args=(streams_path),
+        args=(streams_path,),
         target_path_list=[f_reg['stream_path']],
         dependent_task_list=[flow_accum_task],
         task_name='stream extraction')
