@@ -435,7 +435,7 @@ _OUTPUT_BASE_FILES = {
 INTERMEDIATE_DIR_NAME = 'intermediate_outputs'
 
 _INTERMEDIATE_BASE_FILES = {
-    'ic_path': 'ic.tif',
+    'ic_factor_path': 'ic.tif',
     'load_n_path': 'load_n.tif',
     'load_p_path': 'load_p.tif',
     'modified_load_n_path': 'modified_load_n.tif',
