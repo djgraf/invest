@@ -428,7 +428,7 @@ _OUTPUT_BASE_FILES = {
     'n_subsurface_export_path': 'n_subsurface_export.tif',
     'n_total_export_path': 'n_total_export.tif',
     'p_surface_export_path': 'p_surface_export.tif',
-    'watershed_results_ndr_path': 'watershed_results_ndr.shp',
+    'watershed_results_ndr_path': 'watershed_results_ndr.geojson',
     'stream_path': 'stream_and_drainage.tif',
 }
 
@@ -1683,4 +1683,4 @@ def create_vector_copy(base_vector_path, target_vector_path):
     # use reproject_vector to create a copy in geopackage format
     # keeping the original projection
     pygeoprocessing.reproject_vector(
-        base_vector_path, base_wkt, target_vector_path, driver_name='ESRI Shapefile')
+        base_vector_path, base_wkt, target_vector_path, driver_name='GeoJSON')
