@@ -681,7 +681,7 @@ def execute(args):
         task_name='flow accum')
     
 
-    path = args['workspace_dir'] + 'stream_and_drainage' + file_suffix + '.tif'
+    path = args['workspace_dir'] + 'stream_and_drainage' + args['suffix'] + '.tif'
 
     def assign_suffix(path):
         f_reg['stream_path'] = path
