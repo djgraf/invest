@@ -683,7 +683,7 @@ def execute(args):
 
     path = args['workspace_dir'] + 'stream_and_drainage' + file_suffix + '.tif'
 
-    def assign_suffix(file_suffix):
+    def assign_suffix(path):
         f_reg['stream_path'] = path
     '''
     path = args['workspace_dir'] + 'stream_and_drainage' + file_suffix + '.tif'
