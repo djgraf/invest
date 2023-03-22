@@ -1683,4 +1683,4 @@ def create_vector_copy(base_vector_path, target_vector_path):
     # use reproject_vector to create a copy in geopackage format
     # keeping the original projection
     pygeoprocessing.reproject_vector(
-        base_vector_path, base_wkt, target_vector_path, driver_name='GPKG')
+        base_vector_path, base_wkt, target_vector_path, driver_name='ESRI Shapefile')
