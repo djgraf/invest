@@ -667,7 +667,7 @@ def execute(args):
         target_path_list=[f_reg['ls_path']],
         dependent_task_list=[
             flow_accumulation_task, slope_task,
-            weighted_avg_aspect_task],
+            weighted_avg_aspect_task] if flow_accumulation_task is not None and slope_task is not None and weighted_avg_aspect_task is not None else [],
         task_name='ls factor calculation')
 
     # Check if stream_path before adding the stream_task
@@ -686,24 +686,20 @@ def execute(args):
     else:
         stream_task = None
 
-    # Check if stream_and_drainage_path before adding the drainage_task
-    if not os.path.exists(f_reg['stream_path']):
-        if drainage_present:
-            drainage_task = task_graph.add_task(
-                func=_add_drainage(
-                    f_reg['stream_path'],
-                    f_reg['aligned_drainage_path'],
-                    f_reg['stream_and_drainage_path']),
-                target_path_list=[f_reg['stream_and_drainage_path']],
-                dependent_task_list=[stream_task, align_task] if stream_task is not None and align_task is not None else [],
-                task_name='add drainage')
-            drainage_raster_path_task = (
-                f_reg['stream_and_drainage_path'], drainage_task)
-        else:
-            drainage_raster_path_task = (
-                f_reg['stream_path'], stream_task)
+    if drainage_present:
+        drainage_task = task_graph.add_task(
+            func=_add_drainage(
+                f_reg['stream_path'],
+                f_reg['aligned_drainage_path'],
+                f_reg['stream_and_drainage_path']),
+            target_path_list=[f_reg['stream_and_drainage_path']],
+            dependent_task_list=[stream_task, align_task] if stream_task is not None and align_task is not None else [align_task],
+            task_name='add drainage')
+        drainage_raster_path_task = (
+            f_reg['stream_and_drainage_path'], drainage_task)
     else:
-        drainage_task = None
+        drainage_raster_path_task = (
+            f_reg['stream_path'], stream_task)
 
     threshold_w_task = task_graph.add_task(
         func=_calculate_w,
@@ -767,7 +763,7 @@ def execute(args):
             target_path_list=[accumulation_path, out_bar_path],
             dependent_task_list=[
                 align_task, factor_task, flow_accumulation_task,
-                flow_dir_task],
+                flow_dir_task] if flow_accumulation_task is not None else [align_task, factor_task],
             task_name='calculate %s' % bar_id)
         bar_task_map[bar_id] = bar_task
 
@@ -779,7 +775,7 @@ def execute(args):
         target_path_list=[f_reg['d_up_path']],
         dependent_task_list=[
             bar_task_map['s_bar'], bar_task_map['w_bar'],
-            flow_accumulation_task],
+            flow_accumulation_task] if flow_accumulation_task is not None else [bar_task_map['s_bar'], bar_task_map['w_bar']],
         task_name='calculate Dup')
 
     inverse_ws_factor_task = task_graph.add_task(
@@ -788,8 +784,9 @@ def execute(args):
             f_reg['thresholded_slope_path'], f_reg['thresholded_w_path'],
             f_reg['ws_inverse_path']),
         target_path_list=[f_reg['ws_inverse_path']],
-        dependent_task_list=[threshold_slope_task, threshold_w_task],
+        dependent_task_list=[threshold_slope_task, threshold_w_task] if threshold_slope_task is not None else [threshold_w_task],
         task_name='calculate inverse ws factor')
+
 
     d_dn_task = task_graph.add_task(
         func=pygeoprocessing.routing.distance_to_channel_mfd,
@@ -801,7 +798,7 @@ def execute(args):
         target_path_list=[f_reg['d_dn_path']],
         dependent_task_list=[
             flow_dir_task, drainage_raster_path_task[1],
-            inverse_ws_factor_task],
+            inverse_ws_factor_task] if flow_dir_task is not None else [drainage_raster_path_task[1], inverse_ws_factor_task],
         task_name='calculating d_dn')
 
     ic_task = task_graph.add_task(
@@ -872,7 +869,7 @@ def execute(args):
         args=(f_reg['flow_direction_path'], f_reg['d_dn_path'],
               f_reg['drainage_mask']),
         target_path_list=[f_reg['drainage_mask']],
-        dependent_task_list=[flow_dir_task, d_dn_task],
+        dependent_task_list=[flow_dir_task, d_dn_task] if flow_dir_task is not None else [d_dn_task],
         task_name='write mask of what drains to stream')
 
     _ = task_graph.add_task(
