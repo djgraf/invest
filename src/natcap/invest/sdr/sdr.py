@@ -754,18 +754,30 @@ def execute(args):
              f_reg['s_accumulation_path'],
              f_reg['s_bar_path'],
              's_bar')]:
-        bar_task = task_graph.add_task(
-            func=_calculate_bar_factor,
-            args=(
-                f_reg['flow_direction_path'], factor_path,
-                f_reg['flow_accumulation_path'],
-                accumulation_path, out_bar_path),
-            target_path_list=[accumulation_path, out_bar_path],
-            dependent_task_list=[
-                align_task, factor_task, flow_accumulation_task,
-                flow_dir_task] if flow_accumulation_task is not None else [align_task],
-            task_name='calculate %s' % bar_id)
-        bar_task_map[bar_id] = bar_task
+        if factor_task is not None:
+            bar_task = task_graph.add_task(
+                func=_calculate_bar_factor,
+                args=(
+                    f_reg['flow_direction_path'], factor_path,
+                    f_reg['flow_accumulation_path'],
+                    accumulation_path, out_bar_path),
+                target_path_list=[accumulation_path, out_bar_path],
+                dependent_task_list=[
+                    align_task, factor_task, flow_accumulation_task,
+                    flow_dir_task] if flow_accumulation_task is not None else [align_task],
+                task_name='calculate %s' % bar_id)
+            bar_task_map[bar_id] = bar_task
+        else:
+            bar_task = task_graph.add_task(
+                func=_calculate_bar_factor,
+                args=(
+                    f_reg['flow_direction_path'], factor_path,
+                    f_reg['flow_accumulation_path'],
+                    accumulation_path, out_bar_path),
+                target_path_list=[accumulation_path, out_bar_path],
+                dependent_task_list=[align_task],
+                task_name='calculate %s' % bar_id)
+            bar_task_map[bar_id] = bar_task
 
     d_up_task = task_graph.add_task(
         func=_calculate_d_up,
