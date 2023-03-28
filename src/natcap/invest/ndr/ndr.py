@@ -653,57 +653,46 @@ def execute(args, streams_path):
         target_path_list=aligned_raster_list,
         task_name='align rasters')
 
-    fill_pits_task = task_graph.add_task(
-        func=pygeoprocessing.routing.fill_pits,
-        args=(
-            (f_reg['aligned_dem_path'], 1), f_reg['pit_filled_dem_path']),
-        kwargs={'working_dir': cache_dir},
-        dependent_task_list=[align_raster_task],
-        target_path_list=[f_reg['pit_filled_dem_path']],
-        task_name='fill pits')
+    # Check if the pit_filled_dem_path already exists before adding the fill_pits_task
+    if not os.path.exists(f_reg['pit_filled_dem_path']):
+        fill_pits_task = task_graph.add_task(
+            func=pygeoprocessing.routing.fill_pits,
+            args=(
+                (f_reg['aligned_dem_path'], 1), f_reg['pit_filled_dem_path']),
+            kwargs={'working_dir': cache_dir},
+            dependent_task_list=[align_raster_task],
+            target_path_list=[f_reg['pit_filled_dem_path']],
+            task_name='fill pits')
+    else:
+        fill_pits_task = None
 
-    flow_dir_task = task_graph.add_task(
-        func=pygeoprocessing.routing.flow_dir_mfd,
-        args=(
-            (f_reg['pit_filled_dem_path'], 1), f_reg['flow_direction_path']),
-        kwargs={'working_dir': cache_dir},
-        dependent_task_list=[fill_pits_task],
-        target_path_list=[f_reg['flow_direction_path']],
-        task_name='flow dir')
+    # Check if flow_direction_path before adding the flow_dir_task
+    if not os.path.exists(f_reg['flow_direction_path']):
+        flow_dir_task = task_graph.add_task(
+            func=pygeoprocessing.routing.flow_dir_mfd,
+            args=(
+                (f_reg['pit_filled_dem_path'], 1), f_reg['flow_direction_path']),
+            kwargs={'working_dir': cache_dir},
+            dependent_task_list=[fill_pits_task] if fill_pits_task is not None else [],
+            target_path_list=[f_reg['flow_direction_path']],
+            task_name='flow dir')
+    else:
+        flow_dir_task = None
 
-    flow_accum_task = task_graph.add_task(
-        func=pygeoprocessing.routing.flow_accumulation_mfd,
-        args=(
-            (f_reg['flow_direction_path'], 1),
-            f_reg['flow_accumulation_path']),
-        target_path_list=[f_reg['flow_accumulation_path']],
-        dependent_task_list=[flow_dir_task],
-        task_name='flow accum')
-    
+    # Check if flow_accumulation_path before adding the flow_accum_task
+    if not os.path.exists(f_reg['flow_accumulation_path']):
+        flow_accum_task = task_graph.add_task(
+            func=pygeoprocessing.routing.flow_accumulation_mfd,
+            args=(
+                (f_reg['flow_direction_path'], 1),
+                f_reg['flow_accumulation_path']),
+            target_path_list=[f_reg['flow_accumulation_path']],
+            dependent_task_list=[flow_dir_task] if flow_dir_task is not None else [],
+            task_name='flow accum')
+    else:
+        flow_accum_task = None
+
     '''
-    def return_streams(streams_path):
-        return streams_path
-    
-    stream_extraction_task = task_graph.add_task(
-        func=return_streams,
-        args=(streams_path,),
-        target_path_list=[f_reg['stream_path']],
-        dependent_task_list=[flow_accum_task],
-        task_name='stream extraction')
-    
-    path = args['workspace_dir'] + 'stream_and_drainage' + file_suffix + '.tif'
-
-    if os.path.exists(path_check):
-        def return_stream_file():
-            return path_check
-        
-    stream_extraction_task = task_graph.add_task(
-        func=assign_suffix,
-        args=(path),
-        target_path_list=[f_reg['stream_path']],
-        dependent_task_list=[flow_accum_task],
-        task_name='stream extraction')
-
     stream_extraction_task = task_graph.add_task(
         func=pygeoprocessing.routing.extract_streams_mfd,
         args=(
@@ -716,92 +705,132 @@ def execute(args, streams_path):
         task_name='stream extraction')
     '''
 
-    calculate_slope_task = task_graph.add_task(
-        func=pygeoprocessing.calculate_slope,
-        args=((f_reg['pit_filled_dem_path'], 1), f_reg['slope_path']),
-        target_path_list=[f_reg['slope_path']],
-        dependent_task_list=[fill_pits_task],
-        task_name='calculate slope')
+    # Check if slope_path already exists before adding the calculate_slope_task
+    if not os.path.exists(f_reg['slope_path']):
+        calculate_slope_task = task_graph.add_task(
+            func=pygeoprocessing.calculate_slope,
+            args=((f_reg['pit_filled_dem_path'], 1), f_reg['slope_path']),
+            target_path_list=[f_reg['slope_path']],
+            dependent_task_list=[fill_pits_task] if fill_pits_task is not None else [],
+            task_name='calculate slope')
+    else:
+        calculate_slope_task = None
 
-    threshold_slope_task = task_graph.add_task(
-        func=_slope_proportion_and_threshold,
-        args=(f_reg['slope_path'], f_reg['thresholded_slope_path']),
-        target_path_list=[f_reg['thresholded_slope_path']],
-        dependent_task_list=[calculate_slope_task],
-        task_name='threshold slope')
+    # Check if thresholded_slope_path before adding the threshold_slope_task
+    if not os.path.exists(f_reg['thresholded_slope_path']):
+        threshold_slope_task = task_graph.add_task(
+            func=_slope_proportion_and_threshold,
+            args=(f_reg['slope_path'], f_reg['thresholded_slope_path']),
+            target_path_list=[f_reg['thresholded_slope_path']],
+            dependent_task_list=[calculate_slope_task] if calculate_slope_task is not None else [],
+            task_name='threshold slope')
+    else:
+        threshold_slope_task = None
 
-    runoff_proxy_index_task = task_graph.add_task(
-        func=_normalize_raster,
-        args=((f_reg['aligned_runoff_proxy_path'], 1),
-              f_reg['runoff_proxy_index_path']),
-        target_path_list=[f_reg['runoff_proxy_index_path']],
-        dependent_task_list=[align_raster_task],
-        task_name='runoff proxy mean')
+    # Check if runoff_proxy_index_path before adding the runoff_proxy_index_task
+    if not os.path.exists(f_reg['runoff_proxy_index_path']):
+        runoff_proxy_index_task = task_graph.add_task(
+            func=_normalize_raster,
+            args=((f_reg['aligned_runoff_proxy_path'], 1),
+                f_reg['runoff_proxy_index_path']),
+            target_path_list=[f_reg['runoff_proxy_index_path']],
+            dependent_task_list=[align_raster_task],
+            task_name='runoff proxy mean')
+    else:
+        runoff_proxy_index_task = None
 
-    s_task = task_graph.add_task(
-        func=pygeoprocessing.routing.flow_accumulation_mfd,
-        args=((f_reg['flow_direction_path'], 1), f_reg['s_accumulation_path']),
-        kwargs={
-            'weight_raster_path_band': (f_reg['thresholded_slope_path'], 1)},
-        target_path_list=[f_reg['s_accumulation_path']],
-        dependent_task_list=[flow_dir_task, threshold_slope_task],
-        task_name='route s')
+    # Check if s_accumulation_path before adding the s_task
+    if not os.path.exists(f_reg['s_accumulation_path']):
+        s_task = task_graph.add_task(
+            func=pygeoprocessing.routing.flow_accumulation_mfd,
+            args=((f_reg['flow_direction_path'], 1), f_reg['s_accumulation_path']),
+            kwargs={
+                'weight_raster_path_band': (f_reg['thresholded_slope_path'], 1)},
+            target_path_list=[f_reg['s_accumulation_path']],
+            dependent_task_list=[flow_dir_task, threshold_slope_task] if flow_dir_task is not None and threshold_slope_task is not None else [],
+            task_name='route s')
+    else:
+        s_task = None
 
-    s_bar_task = task_graph.add_task(
-        func=s_bar_calculate,
-        args=(f_reg['s_accumulation_path'], f_reg['flow_accumulation_path'],
-              f_reg['s_bar_path']),
-        target_path_list=[f_reg['s_bar_path']],
-        dependent_task_list=[s_task, flow_accum_task],
-        task_name='calculate s bar')
+    # Check if s_bar_path before adding the s_bar_task
+    if not os.path.exists(f_reg['s_bar_path']):
+        s_bar_task = task_graph.add_task(
+            func=s_bar_calculate,
+            args=(f_reg['s_accumulation_path'], f_reg['flow_accumulation_path'],
+                f_reg['s_bar_path']),
+            target_path_list=[f_reg['s_bar_path']],
+            dependent_task_list=[s_task, flow_accum_task] if s_task is not None and flow_accum_task is not None else [],
+            task_name='calculate s bar')
+    else:
+        s_bar_task = None
 
-    d_up_task = task_graph.add_task(
-        func=d_up_calculation,
-        args=(f_reg['s_bar_path'], f_reg['flow_accumulation_path'],
-              f_reg['d_up_path']),
-        target_path_list=[f_reg['d_up_path']],
-        dependent_task_list=[s_bar_task, flow_accum_task],
-        task_name='d up')
+    # Check if d_up_path before adding the d_up_task
+    if not os.path.exists(f_reg['d_up_path']):
+        d_up_task = task_graph.add_task(
+            func=d_up_calculation,
+            args=(f_reg['s_bar_path'], f_reg['flow_accumulation_path'],
+                f_reg['d_up_path']),
+            target_path_list=[f_reg['d_up_path']],
+            dependent_task_list=[s_bar_task, flow_accum_task] if s_bar_task is not None and flow_accum_task is not None else [],
+            task_name='d up')
+    else:
+        d_up_task = None
 
-    s_inv_task = task_graph.add_task(
-        func=invert_raster_values,
-        args=(f_reg['thresholded_slope_path'], f_reg['s_factor_inverse_path']),
-        target_path_list=[f_reg['s_factor_inverse_path']],
-        dependent_task_list=[threshold_slope_task],
-        task_name='s inv')
+    # Check if s_factor_inverse_path before adding the s_inv_task
+    if not os.path.exists(f_reg['s_factor_inverse_path']):
+        s_inv_task = task_graph.add_task(
+            func=invert_raster_values,
+            args=(f_reg['thresholded_slope_path'], f_reg['s_factor_inverse_path']),
+            target_path_list=[f_reg['s_factor_inverse_path']],
+            dependent_task_list=[threshold_slope_task] if threshold_slope_task is not None else [],
+            task_name='s inv')
+    else:
+        s_inv_task = None
 
-    d_dn_task = task_graph.add_task(
-        func=pygeoprocessing.routing.distance_to_channel_mfd,
-        args=(
-            (f_reg['flow_direction_path'], 1),
-            (f_reg['stream_path'], 1),
-            f_reg['d_dn_path']),
-        kwargs={'weight_raster_path_band': (
-            f_reg['s_factor_inverse_path'], 1)},
-        #dependent_task_list=[stream_extraction_task, s_inv_task],
-        dependent_task_list=[s_inv_task],
-        target_path_list=[f_reg['d_dn_path']],
-        task_name='d dn')
+    # Check if d_dn_path before adding the d_dn_task
+    if not os.path.exists(f_reg['d_dn_path']):
+        d_dn_task = task_graph.add_task(
+            func=pygeoprocessing.routing.distance_to_channel_mfd,
+            args=(
+                (f_reg['flow_direction_path'], 1),
+                (f_reg['stream_path'], 1),
+                f_reg['d_dn_path']),
+            kwargs={'weight_raster_path_band': (
+                f_reg['s_factor_inverse_path'], 1)},
+            #dependent_task_list=[stream_extraction_task, s_inv_task],
+            dependent_task_list=[s_inv_task] if s_inv_task is not None else [],
+            target_path_list=[f_reg['d_dn_path']],
+            task_name='d dn')
+    else:
+        d_dn_task = None
 
-    dist_to_channel_task = task_graph.add_task(
-        func=pygeoprocessing.routing.distance_to_channel_mfd,
-        args=(
-            (f_reg['flow_direction_path'], 1),
-            (f_reg['stream_path'], 1),
-            f_reg['dist_to_channel_path']),
-        #dependent_task_list=[stream_extraction_task],
-        dependent_task_list=[],
-        target_path_list=[f_reg['dist_to_channel_path']],
-        task_name='dist to channel')
+    # Check if dist_to_channel_path before adding the dist_to_channel_task
+    if not os.path.exists(f_reg['dist_to_channel_path']):
+        dist_to_channel_task = task_graph.add_task(
+            func=pygeoprocessing.routing.distance_to_channel_mfd,
+            args=(
+                (f_reg['flow_direction_path'], 1),
+                (f_reg['stream_path'], 1),
+                f_reg['dist_to_channel_path']),
+            #dependent_task_list=[stream_extraction_task],
+            dependent_task_list=[],
+            target_path_list=[f_reg['dist_to_channel_path']],
+            task_name='dist to channel')
+    else:
+        dist_to_channel_task = None
 
-    _ = task_graph.add_task(
-        func=sdr._calculate_what_drains_to_stream,
-        args=(f_reg['flow_direction_path'],
-              f_reg['dist_to_channel_path'],
-              f_reg['drainage_mask']),
-        target_path_list=[f_reg['drainage_mask']],
-        dependent_task_list=[flow_dir_task, dist_to_channel_task],
-        task_name='write mask of what drains to stream')
+    # Check if drainage_mask already exists before adding the _
+    if not os.path.exists(f_reg['dist_to_channel_path']):
+        _ = task_graph.add_task(
+            func=sdr._calculate_what_drains_to_stream,
+            args=(f_reg['flow_direction_path'],
+                f_reg['dist_to_channel_path'],
+                f_reg['drainage_mask']),
+            target_path_list=[f_reg['drainage_mask']],
+            dependent_task_list=[flow_dir_task, dist_to_channel_task] if flow_dir_task is not None and dist_to_channel_task is not None else [],
+            task_name='write mask of what drains to stream')
+    else:
+        _ = None
 
     ic_task = task_graph.add_task(
         func=calculate_ic,
