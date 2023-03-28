@@ -768,6 +768,10 @@ def execute(args):
                 task_name='calculate %s' % bar_id)
             bar_task_map[bar_id] = bar_task
         else:
+            dependent_task_list = [align_task]
+        
+        dependent_task_list = [task for task in dependent_task_list if task is not None]
+
             bar_task = task_graph.add_task(
                 func=_calculate_bar_factor,
                 args=(
