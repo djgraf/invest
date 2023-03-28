@@ -863,7 +863,7 @@ def execute(args, streams_path):
             args=([load_path, f_reg['runoff_proxy_index_path']],
                   _TARGET_NODATA, modified_load_path),
             target_path_list=[modified_load_path],
-            dependent_task_list=[load_task, runoff_proxy_index_task],
+            dependent_task_list=[load_task, runoff_proxy_index_task] if runoff_proxy_index_task is not None else [load_task],
             task_name=f'modified load {nutrient}')
 
         surface_load_path = f_reg[f'surface_load_{nutrient}_path']
@@ -956,7 +956,7 @@ def execute(args, streams_path):
                     float(args['subsurface_critical_length_n']),
                     f_reg['dist_to_channel_path'], f_reg['sub_ndr_n_path']),
                 target_path_list=[f_reg['sub_ndr_n_path']],
-                dependent_task_list=[dist_to_channel_task],
+                dependent_task_list=[dist_to_channel_task] if dist_to_channel_task is not None else [],
                 task_name='sub ndr n')
 
             subsurface_export_task = task_graph.add_task(
