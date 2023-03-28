@@ -837,7 +837,7 @@ def execute(args, streams_path):
         args=(
             f_reg['d_up_path'], f_reg['d_dn_path'], f_reg['ic_factor_path']),
         target_path_list=[f_reg['ic_factor_path']],
-        dependent_task_list=[d_dn_task, d_up_task],
+        dependent_task_list=[d_dn_task, d_up_task] if d_dn_task is not None and d_up_task is not None else [],
         task_name='calc ic')
 
     for nutrient in nutrients_to_process:
