@@ -763,7 +763,7 @@ def execute(args):
             target_path_list=[accumulation_path, out_bar_path],
             dependent_task_list=[
                 align_task, factor_task, flow_accumulation_task,
-                flow_dir_task] if flow_accumulation_task is not None else [align_task, factor_task],
+                flow_dir_task] if flow_accumulation_task is not None else [align_task],
             task_name='calculate %s' % bar_id)
         bar_task_map[bar_id] = bar_task
 
