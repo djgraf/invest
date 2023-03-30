@@ -754,10 +754,12 @@ def execute(args):
              f_reg['s_accumulation_path'],
              f_reg['s_bar_path'],
              's_bar')]:
-        if factor_task is not None:
+        if factor_task is not None and flow_accumulation_task is not None and flow_dir_task is not None:
             dependent_task_list=[
                     align_task, factor_task, flow_accumulation_task,
-                    flow_dir_task] if flow_accumulation_task is not None else [align_task, factor_task]
+                    flow_dir_task]
+        elif factor_task is not None:
+            dependent_task_list=[align_task, factor_task]
         else:
             dependent_task_list = [align_task]
         
