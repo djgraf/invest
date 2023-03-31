@@ -672,6 +672,7 @@ def execute(args):
 
     # Check if stream_path before adding the stream_task
     if not os.path.exists(f_reg['stream_path']):
+        print(f'Calculating stream network with threshold flow accumulation value of: {args["threshold_flow_accumulation"]}')
         stream_task = task_graph.add_task(
             func=pygeoprocessing.routing.extract_streams_mfd,
             args=(
@@ -693,7 +694,7 @@ def execute(args):
                 f_reg['aligned_drainage_path'],
                 f_reg['stream_and_drainage_path']),
             target_path_list=[f_reg['stream_and_drainage_path']],
-            dependent_task_list=[stream_task, align_task] if stream_task is not None and align_task is not None else [align_task],
+            dependent_task_list=[stream_task, align_task] if stream_task is not None else [align_task],
             task_name='add drainage')
         drainage_raster_path_task = (
             f_reg['stream_and_drainage_path'], drainage_task)
@@ -795,7 +796,6 @@ def execute(args):
         target_path_list=[f_reg['ws_inverse_path']],
         dependent_task_list=[threshold_slope_task, threshold_w_task] if threshold_slope_task is not None else [threshold_w_task],
         task_name='calculate inverse ws factor')
-
 
     d_dn_task = task_graph.add_task(
         func=pygeoprocessing.routing.distance_to_channel_mfd,

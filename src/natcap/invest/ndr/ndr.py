@@ -699,6 +699,7 @@ def execute(args, streams_path=None):
         flow_accum_task = None
 
     if streams_path is None:
+        print(f'Calculating stream network with threshold flow accumulation value of: {args["threshold_flow_accumulation"]}')
         stream_extraction_task = task_graph.add_task(
             func=pygeoprocessing.routing.extract_streams_mfd,
             args=(
