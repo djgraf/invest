@@ -706,6 +706,7 @@ def execute(args, streams_path=None):
                 (f_reg['flow_direction_path'], 1),
                 float(args['threshold_flow_accumulation']),
                 f_reg['stream_path']),
+            kwargs={'trace_threshold_proportion': 0.7}, # Copying from SDR main source code
             target_path_list=[f_reg['stream_path']],
             dependent_task_list=[flow_accum_task] if flow_accum_task is not None else [],
             task_name='stream extraction')
