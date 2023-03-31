@@ -635,16 +635,17 @@ def execute(args, streams_path=None):
 
     dem_info = pygeoprocessing.get_raster_info(args['dem_path'])
 
-    base_raster_list = [
-        args['dem_path'], args['lulc_path'],
-        args['runoff_proxy_path'], streams_path] if streams_path is not None else [args['dem_path'],
-                                                                                   args['lulc_path'],
-                                                                                   args['runoff_proxy_path']]
-    aligned_raster_list = [
-        f_reg['aligned_dem_path'], f_reg['aligned_lulc_path'],
-        f_reg['aligned_runoff_proxy_path'], f_reg['stream_path']] if streams_path is not None else [args['aligned_dem_path'],
-                                                                                                    args['aligned_lulc_path'],
-                                                                                                    args['runoff_proxy_path']]
+    if streams_path is not None:
+        base_raster_list = [
+            args['dem_path'], args['lulc_path'],
+            args['runoff_proxy_path'], streams_path]
+        aligned_raster_list = [
+            f_reg['aligned_dem_path'], f_reg['aligned_lulc_path'],
+            f_reg['aligned_runoff_proxy_path'], f_reg['stream_path']]
+    else:
+        base_raster_list = [args['dem_path'], args['lulc_path'], args['runoff_proxy_path']]
+        aligned_raster_list = [args['aligned_dem_path'], args['aligned_lulc_path'], args['runoff_proxy_path']]
+    
     align_raster_task = task_graph.add_task(
         func=pygeoprocessing.align_and_resize_raster_stack,
         args=(
