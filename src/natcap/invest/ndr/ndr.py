@@ -483,7 +483,7 @@ _CACHE_BASE_FILES = {
 _TARGET_NODATA = -1
 
 
-def execute(args, streams_path):
+def execute(args, streams_path=None):
     """Nutrient Delivery Ratio.
 
     Args:
@@ -636,10 +636,15 @@ def execute(args, streams_path):
     dem_info = pygeoprocessing.get_raster_info(args['dem_path'])
 
     base_raster_list = [
-        args['dem_path'], args['lulc_path'], args['runoff_proxy_path'], streams_path]
+        args['dem_path'], args['lulc_path'],
+        args['runoff_proxy_path'], streams_path] if streams_path is not None else [args['dem_path'],
+                                                                                   args['lulc_path'],
+                                                                                   args['runoff_proxy_path']]
     aligned_raster_list = [
         f_reg['aligned_dem_path'], f_reg['aligned_lulc_path'],
-        f_reg['aligned_runoff_proxy_path'], f_reg['stream_path']]
+        f_reg['aligned_runoff_proxy_path'], f_reg['stream_path']] if streams_path is not None else [args['aligned_dem_path'],
+                                                                                                    args['aligned_lulc_path'],
+                                                                                                    args['runoff_proxy_path']]
     align_raster_task = task_graph.add_task(
         func=pygeoprocessing.align_and_resize_raster_stack,
         args=(
@@ -692,18 +697,19 @@ def execute(args, streams_path):
     else:
         flow_accum_task = None
 
-    '''
-    stream_extraction_task = task_graph.add_task(
-        func=pygeoprocessing.routing.extract_streams_mfd,
-        args=(
-            (f_reg['flow_accumulation_path'], 1),
-            (f_reg['flow_direction_path'], 1),
-            float(args['threshold_flow_accumulation']),
-            f_reg['stream_path']),
-        target_path_list=[f_reg['stream_path']],
-        dependent_task_list=[flow_accum_task],
-        task_name='stream extraction')
-    '''
+    if streams_path is None:
+        stream_extraction_task = task_graph.add_task(
+            func=pygeoprocessing.routing.extract_streams_mfd,
+            args=(
+                (f_reg['flow_accumulation_path'], 1),
+                (f_reg['flow_direction_path'], 1),
+                float(args['threshold_flow_accumulation']),
+                f_reg['stream_path']),
+            target_path_list=[f_reg['stream_path']],
+            dependent_task_list=[flow_accum_task] if flow_accum_task is not None else [],
+            task_name='stream extraction')
+    else:
+        stream_extraction_task = None
 
     # Check if slope_path already exists before adding the calculate_slope_task
     if not os.path.exists(f_reg['slope_path']):
@@ -787,6 +793,14 @@ def execute(args, streams_path):
     else:
         s_inv_task = None
 
+    # Conditionally assign dependent_task_list for d_dn_task based on previous tasks
+    if s_inv_task is not None and stream_extraction_task is not None:
+        dependent_task_list=[stream_extraction_task, s_inv_task]
+    elif s_inv_task is not None:
+        dependent_task_list=[s_inv_task]
+    else:
+        dependent_task_list = []
+
     # Check if d_dn_path before adding the d_dn_task
     if not os.path.exists(f_reg['d_dn_path']):
         d_dn_task = task_graph.add_task(
@@ -798,7 +812,7 @@ def execute(args, streams_path):
             kwargs={'weight_raster_path_band': (
                 f_reg['s_factor_inverse_path'], 1)},
             #dependent_task_list=[stream_extraction_task, s_inv_task],
-            dependent_task_list=[s_inv_task] if s_inv_task is not None else [],
+            dependent_task_list=dependent_task_list,
             target_path_list=[f_reg['d_dn_path']],
             task_name='d dn')
     else:
@@ -813,7 +827,7 @@ def execute(args, streams_path):
                 (f_reg['stream_path'], 1),
                 f_reg['dist_to_channel_path']),
             #dependent_task_list=[stream_extraction_task],
-            dependent_task_list=[],
+            dependent_task_list=[stream_extraction_task] if stream_extraction_task is not None else [],
             target_path_list=[f_reg['dist_to_channel_path']],
             task_name='dist to channel')
     else:
@@ -883,8 +897,8 @@ def execute(args, streams_path):
                 f_reg['aligned_lulc_path'], f_reg['stream_path'],
                 lucode_to_parameters, f'eff_{nutrient}', eff_path),
             target_path_list=[eff_path],
-            #dependent_task_list=[align_raster_task, stream_extraction_task],
-            dependent_task_list=[align_raster_task],
+            dependent_task_list=[align_raster_task, stream_extraction_task] if stream_extraction_task is not None else [align_raster_task],
+            #dependent_task_list=[align_raster_task],
             task_name=f'ret eff {nutrient}')
 
         crit_len_path = f_reg[f'crit_len_{nutrient}_path']
@@ -894,8 +908,8 @@ def execute(args, streams_path):
                 f_reg['aligned_lulc_path'], f_reg['stream_path'],
                 lucode_to_parameters, f'crit_len_{nutrient}', crit_len_path),
             target_path_list=[crit_len_path],
-            #dependent_task_list=[align_raster_task, stream_extraction_task],
-            dependent_task_list=[align_raster_task],
+            dependent_task_list=[align_raster_task, stream_extraction_task] if stream_extraction_task is not None else [align_raster_task],
+            #dependent_task_list=[align_raster_task],
             task_name=f'ret eff {nutrient}')
 
         effective_retention_path = (
@@ -907,9 +921,9 @@ def execute(args, streams_path):
                 f_reg['stream_path'], eff_path,
                 crit_len_path, effective_retention_path),
             target_path_list=[effective_retention_path],
-            #dependent_task_list=[
-                #stream_extraction_task, eff_task, crit_len_task],
-            dependent_task_list=[eff_task, crit_len_task],
+            dependent_task_list=[
+                stream_extraction_task, eff_task, crit_len_task] if stream_extraction_task is not None else [eff_task, crit_len_task],
+            #dependent_task_list=[eff_task, crit_len_task],
             task_name=f'eff ret {nutrient}')
 
         ndr_path = f_reg[f'ndr_{nutrient}_path']
